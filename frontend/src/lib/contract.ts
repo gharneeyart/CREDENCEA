@@ -43,6 +43,7 @@ export const CREDENCEA_ABI = [
   // Events
   "event InstitutionAdded(address indexed institution, string name, string abbrev, uint256 dailyCap)",
   "event InstitutionRemoved(address indexed institution)",
+  "event InstitutionWalletReplaced(address indexed oldWallet, address indexed newWallet)",
   "event CertificateIssued(uint256 indexed tokenId, address indexed institution, address indexed recipient, string metadataURI, uint256 issuedAt)",
   "event CertificateRevoked(uint256 indexed tokenId, address indexed revokedBy)",
   "event RecoveryRequested(address indexed oldWallet, address indexed newWallet, address indexed requestedBy)",

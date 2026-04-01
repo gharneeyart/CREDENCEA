@@ -27,6 +27,7 @@ export interface CertificateMetadata {
 }
 
 export interface InstitutionInfo {
+  address: string;
   active: boolean;
   name: string;
   abbrev: string;

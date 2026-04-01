@@ -3,21 +3,15 @@ import { useAppKitAccount } from "@reown/appkit/react";
 import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { ShieldCheck, Plus, Trash2, Loader2, AlertTriangle, Building2, CheckCircle2, Pause, Play, RefreshCw } from "lucide-react";
-import { useAddInstitution, useRemoveInstitution, useIsOwner, useTotalSupply, usePauseContract, useContractPaused, useReplaceInstitutionWallet } from "@/hooks/useContract";
+import { useAddInstitution, useRemoveInstitution, useIsOwner, useTotalSupply, usePauseContract, useContractPaused, useReplaceInstitutionWallet, useFetchInstitutions } from "@/hooks/useContract";
 import { cn } from "@/lib/utils";
-
-interface LocalInst { address: string; name: string; abbrev: string; theme: string; accent: string; cap: number; }
+import { Gate } from "@/components/ui/Gate";
+import { Stat } from "@/components/ui/Stat";
+import { PRESET_THEMES, formatDate } from "@/helpers";
 
 const inp = "w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent focus:bg-white transition";
 
-const PRESET_THEMES = [
-  { label: "Sky blue", theme: "#0ea5e9", accent: "#0284c7" },
-  { label: "Emerald", theme: "#059669", accent: "#047857" },
-  { label: "Violet", theme: "#7c3aed", accent: "#6d28d9" },
-  { label: "Rose", theme: "#e11d48", accent: "#be123c" },
-  { label: "Amber", theme: "#d97706", accent: "#b45309" },
-  { label: "Navy", theme: "#1e40af", accent: "#1e3a8a" },
-];
+
 
 export default function AdminPage() {
   const { isConnected, address } = useAppKitAccount();
@@ -28,6 +22,7 @@ export default function AdminPage() {
   const totalSupplyFn = useTotalSupply();
   const pauseContractFn = usePauseContract();
   const contractPausedFn = useContractPaused();
+  const fetchInstitutionsFn = useFetchInstitutions();
 
   const [newAddr, setNewAddr] = useState("");
   const [newName, setNewName] = useState("");
@@ -38,7 +33,6 @@ export default function AdminPage() {
   const [adding, setAdding] = useState(false);
   const [removingAddr, setRemovingAddr] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
-  const [institutions, setInstitutions] = useState<LocalInst[]>([]);
 
   // Institution wallet replacement
   const [replaceOld, setReplaceOld] = useState("");
@@ -48,6 +42,18 @@ export default function AdminPage() {
   const { data: isOwner, isLoading: checkingOwner } = useQuery({ queryKey: ["isOwner", address], queryFn: isOwnerFn, enabled: !!address && isConnected });
   const { data: totalSupply } = useQuery({ queryKey: ["totalSupply"], queryFn: totalSupplyFn, enabled: isConnected, refetchInterval: 30_000 });
   const { data: isPaused, refetch: refetchPaused } = useQuery({ queryKey: ["paused"], queryFn: contractPausedFn, enabled: isConnected, refetchInterval: 10_000 });
+  const {
+    data: institutions = [],
+    isLoading: loadingInstitutions,
+    refetch: refetchInstitutions,
+  } = useQuery({
+    queryKey: ["institutions"],
+    queryFn: fetchInstitutionsFn,
+    enabled: !!isOwner && isConnected,
+    refetchInterval: 30_000,
+  });
+
+  const activeInstitutions = institutions.filter((institution) => institution.active);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +65,7 @@ export default function AdminPage() {
     try {
       const cap = newCap ? parseInt(newCap) : 0;
       await addInstitutionFn(newAddr.trim(), newName.trim(), newAbbrev.trim().toUpperCase(), newTheme, newAccent, cap);
-      setInstitutions(p => [{ address: newAddr.trim(), name: newName.trim(), abbrev: newAbbrev.trim().toUpperCase(), theme: newTheme, accent: newAccent, cap: cap || 200 }, ...p]);
+      await refetchInstitutions();
       setNewAddr(""); setNewName(""); setNewAbbrev(""); setNewCap("");
       toast.success(`${newName} (${newAbbrev.toUpperCase()}) added`);
     } catch (err: unknown) { toast.error((err instanceof Error ? err.message : "Failed").slice(0, 80)); }
@@ -71,7 +77,7 @@ export default function AdminPage() {
     setRemovingAddr(addr);
     try {
       await removeInstitutionFn(addr);
-      setInstitutions(p => p.filter(i => i.address !== addr));
+      await refetchInstitutions();
       toast.success(`${name} removed`);
     } catch (err: unknown) { toast.error((err instanceof Error ? err.message : "Failed").slice(0, 80)); }
     finally { setRemovingAddr(null); }
@@ -95,6 +101,7 @@ export default function AdminPage() {
     setReplacing(true);
     try {
       await replaceWalletFn(replaceOld, replaceNew);
+      await refetchInstitutions();
       toast.success("Institution wallet replaced");
       setReplaceOld(""); setReplaceNew("");
     } catch (err: unknown) { toast.error((err instanceof Error ? err.message : "Failed").slice(0, 80)); }
@@ -115,7 +122,7 @@ export default function AdminPage() {
       {/* Stats */}
       <div className="grid md:grid-cols-3 gap-4">
         <Stat label="Certificates issued" value={totalSupply?.toString() ?? "—"} icon={CheckCircle2} color="text-sky-500" />
-        <Stat label="Institutions (session)" value={String(institutions.length)} icon={Building2} color="text-green-600" />
+        <Stat label="Active institutions" value={String(activeInstitutions.length)} icon={Building2} color="text-green-600" />
         <Stat label="Contract" value={isPaused ? "Paused" : "Active"} icon={isPaused ? Pause : Play} color={isPaused ? "text-amber-500" : "text-green-600"} />
       </div>
 
@@ -227,37 +234,99 @@ export default function AdminPage() {
         </form>
       </div>
 
-      {/* Institution list */}
+      {/* Institution table */}
       <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100">
           <h2 className="font-semibold text-slate-900 text-sm flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-sky-500" />Whitelisted Institutions (this session)
+            <Building2 className="w-4 h-4 text-sky-500" />Whitelisted Institutions
           </h2>
         </div>
-        {institutions.length === 0
-          ? <div className="px-5 py-10 text-center text-slate-400 text-sm">No institutions added this session.</div>
-          : <ul className="divide-y divide-slate-100">
-            {institutions.map(inst => (
-              <li key={inst.address} className="flex items-center gap-3 px-5 py-3.5">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0"
-                  style={{ backgroundColor: inst.theme }}>
-                  {inst.abbrev.slice(0, 2)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-slate-800 font-medium text-sm">{inst.name}</p>
-                    <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: inst.theme + "20", color: inst.theme }}>{inst.abbrev}</span>
-                  </div>
-                  <p className="text-slate-400 text-xs font-mono truncate">{inst.address}</p>
-                </div>
-                <span className="text-xs text-slate-400 shrink-0 hidden sm:block">Cap: {inst.cap}/day</span>
-                <button onClick={() => handleRemove(inst.address, inst.name)} disabled={removingAddr === inst.address}
-                  className="p-1.5 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-500 transition-colors disabled:opacity-50 shrink-0">
-                  {removingAddr === inst.address ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                </button>
-              </li>
-            ))}
-          </ul>}
+        {loadingInstitutions ? (
+          <div className="px-5 py-10 flex items-center justify-center gap-2 text-sm text-slate-500">
+            <Loader2 className="w-4 h-4 animate-spin text-sky-500" />
+            Loading institutions...
+          </div>
+        ) : institutions.length === 0 ? (
+          <div className="px-5 py-10 text-center text-slate-400 text-sm">No institutions found on-chain yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-slate-500">
+                <tr className="text-left">
+                  <th className="px-5 py-3 font-medium">Institution</th>
+                  <th className="px-5 py-3 font-medium">Wallet</th>
+                  <th className="px-5 py-3 font-medium">Brand</th>
+                  <th className="px-5 py-3 font-medium">Daily Cap</th>
+                  <th className="px-5 py-3 font-medium">Issued Today</th>
+                  <th className="px-5 py-3 font-medium">Added</th>
+                  <th className="px-5 py-3 font-medium">Status</th>
+                  <th className="px-5 py-3 font-medium text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {institutions.map((institution) => (
+                  <tr key={institution.address} className="align-top">
+                    <td className="px-5 py-4">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0"
+                          style={{ backgroundColor: institution.themeColor }}
+                        >
+                          {(institution.abbrev || institution.name || "CC").slice(0, 2)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-medium text-slate-900">{institution.name || "Unnamed institution"}</div>
+                          <div className="mt-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-mono" style={{ backgroundColor: institution.themeColor + "20", color: institution.themeColor }}>
+                            {institution.abbrev || "N/A"}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="font-mono text-xs text-slate-600 break-all max-w-[220px]">{institution.address}</div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="w-4 h-4 rounded-full border border-slate-200" style={{ backgroundColor: institution.themeColor }} />
+                        <span className="font-mono text-xs text-slate-600">{institution.themeColor}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="w-4 h-4 rounded-full border border-slate-200" style={{ backgroundColor: institution.accentColor }} />
+                        <span className="font-mono text-xs text-slate-600">{institution.accentColor}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-slate-700">{institution.dailyCap.toString()}</td>
+                    <td className="px-5 py-4 text-slate-700">{institution.dailyIssuedCount.toString()}</td>
+                    <td className="px-5 py-4 text-slate-600">{formatDate(institution.addedAt)}</td>
+                    <td className="px-5 py-4">
+                      <span className={cn(
+                        "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold",
+                        institution.active ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500"
+                      )}>
+                        <span className={cn("w-1.5 h-1.5 rounded-full", institution.active ? "bg-green-500" : "bg-slate-400")} />
+                        {institution.active ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      {institution.active ? (
+                        <button
+                          onClick={() => handleRemove(institution.address, institution.name || institution.abbrev || "institution")}
+                          disabled={removingAddr === institution.address}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-red-50 text-red-500 text-xs font-medium transition-colors disabled:opacity-50"
+                        >
+                          {removingAddr === institution.address ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                          Remove
+                        </button>
+                      ) : (
+                        <span className="text-xs text-slate-300">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Institution wallet replacement */}
@@ -303,28 +372,8 @@ export default function AdminPage() {
   );
 }
 
-function Stat({ label, value, icon: Icon, color }: { label: string; value: string; icon: React.ElementType; color: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 flex flex-row md:flex-col items-center md:items-start gap-3">
-      <Icon className={cn("w-5 h-5 mb-2", color)} />
-      <div className="">
-        <p className="text-xl font-bold text-slate-900">{value}</p>
-      <p className="text-slate-400 text-xs mt-0.5">{label}</p>
-      </div>
-    </div>
-  );
-}
 
-function Gate({ icon: Icon, title, desc, warn = false }: { icon: React.ElementType; title: string; desc: string; warn?: boolean }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-96 text-center px-4 gap-4">
-      <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center", warn ? "bg-amber-50" : "bg-sky-50")}>
-        <Icon className={cn("w-8 h-8", warn ? "text-amber-500" : "text-sky-500")} />
-      </div>
-      <div>
-        <h2 className="text-xl font-bold text-slate-900 mb-1">{title}</h2>
-        <p className="text-slate-500 max-w-sm text-sm leading-relaxed">{desc}</p>
-      </div>
-    </div>
-  );
-}
+
+
+
+

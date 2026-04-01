@@ -1,3 +1,6 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { QRCodeSVG } from "qrcode.react";
 import type { CertificateMetadata } from "@/types";
 
 /**
@@ -14,6 +17,7 @@ export async function renderCertificateToBlob(
   institutionName: string,
   institutionAbbrev: string,
   displayId: string,
+  verifyUrl: string,
   themeColor: string,
   accentColor: string
 ): Promise<Blob> {
@@ -29,6 +33,16 @@ export async function renderCertificateToBlob(
   const inkLight = "#8a7040";
   const inkFaint = "#a08a4a";
   const accent = accentColor;
+  const qrMarkup = renderToStaticMarkup(
+    createElement(QRCodeSVG, {
+      value: verifyUrl,
+      size: 70,
+      fgColor: theme,
+      bgColor: "#ffffff",
+      level: "M",
+      marginSize: 0,
+    })
+  );
 
   const issueDate = metadata.issuedAt
     ? new Date(metadata.issuedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
@@ -130,6 +144,13 @@ export async function renderCertificateToBlob(
               <span style="font-style:italic;font-size:12px;color:${accent};">Chancellor</span>
             </div>
             <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:${inkLight};">Head of Institution</div>
+          </div>
+
+          <div style="width:86px;flex-shrink:0;text-align:center;">
+            <div style="border:1px solid ${gold};border-radius:8px;padding:6px;background:#ffffff;display:flex;align-items:center;justify-content:center;">
+              ${qrMarkup}
+            </div>
+            <div style="font-size:7px;letter-spacing:1px;text-transform:uppercase;color:${inkFaint};margin-top:4px;">Scan to verify</div>
           </div>
         </div>
       </div>

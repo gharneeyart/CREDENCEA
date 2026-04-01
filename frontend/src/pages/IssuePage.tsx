@@ -2,20 +2,14 @@ import { useState } from "react";
 import { useAppKitAccount } from "@reown/appkit/react";
 import toast from "react-hot-toast";
 import { Award, Loader2, CheckCircle2, ExternalLink, AlertTriangle } from "lucide-react";
-import { useIssueCertificate, useIsInstitution, useRevokeCertificate } from "@/hooks/useContract";
+import { useIssueCertificate, useIsInstitution, useRevokeCertificate, useFetchIssuedCertificatesByInstitution } from "@/hooks/useContract";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import type { IssueFormData, TxStatus } from "@/types";
+import { shortAddress, DEGREES } from "@/helpers";
 import { cn } from "@/lib/utils";
 
-const DEGREES = [
-  "Bachelor of Technology (B.Tech)", "Bachelor of Engineering (B.E)",
-  "Bachelor of Science (B.Sc)", "Bachelor of Arts (B.A)", "Bachelor of Commerce (B.Com)",
-  "Bachelor of Laws (LLB)", "Bachelor of Medicine (MBBS/MBChB)",
-  "Master of Technology (M.Tech)", "Master of Science (M.Sc)", "Master of Arts (M.A)",
-  "Master of Business Administration (MBA)", "Master of Laws (LLM)",
-  "Doctor of Philosophy (PhD)", "Postgraduate Diploma", "Diploma", "Certificate Programme",
-];
+
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: 12 }, (_, i) => String(CURRENT_YEAR - i));
@@ -30,6 +24,7 @@ export default function IssuePage() {
   const isInstitutionFn = useIsInstitution();
   const issueCertificate = useIssueCertificate();
   const revokeFn = useRevokeCertificate();
+  const fetchIssuedCertificates = useFetchIssuedCertificatesByInstitution();
   const navigate = useNavigate();
   const [form, setForm] = useState<IssueFormData>(defaultForm);
   const [status, setStatus] = useState<TxStatus>("idle");
@@ -42,6 +37,16 @@ export default function IssuePage() {
     queryKey: ["isInstitution", address],
     queryFn: () => isInstitutionFn(address!),
     enabled: !!address && isConnected,
+  });
+  const {
+    data: issuedCertificates = [],
+    isLoading: loadingIssuedCertificates,
+    refetch: refetchIssuedCertificates,
+  } = useQuery({
+    queryKey: ["issuedCertificatesByInstitution", address],
+    queryFn: () => fetchIssuedCertificates(address!),
+    enabled: !!address && isConnected && !!isInstitution,
+    refetchInterval: 30_000,
   });
 
   const set = (f: keyof IssueFormData) =>
@@ -60,6 +65,7 @@ export default function IssuePage() {
         setStatusMsg(msg);
         setStatus(msg.includes("IPFS") ? "uploading" : "pending");
       });
+      await refetchIssuedCertificates();
       setStatus("success"); setMintedId(tokenId); setForm(defaultForm);
       toast.success(`Certificate ${tokenId} issued!`);
     } catch (err: unknown) {
@@ -75,6 +81,7 @@ export default function IssuePage() {
     setRevoking(true);
     try {
       await revokeFn(BigInt(revokeId));
+      await refetchIssuedCertificates();
       toast.success(`Certificate #${revokeId} revoked`);
       setRevokeId("");
     } catch (err: unknown) {
@@ -87,7 +94,7 @@ export default function IssuePage() {
   if (!isInstitution) return <Gate icon={AlertTriangle} title="Not an authorised institution" desc="Your wallet has not been whitelisted. Ask the contract owner to add your address." warn />;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-8">
+    <div className="w-11/12 lg:w-10/12  mx-auto px-4 sm:px-6 py-12 space-y-8">
       {/* Issue form */}
       <div>
         <div className="flex items-center gap-2 mb-2">
@@ -164,6 +171,75 @@ export default function IssuePage() {
         </button>
       </form>
 
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100">
+          <h2 className="font-semibold text-slate-900 text-sm">Certificates Issued By Your Institution</h2>
+          <p className="text-slate-400 text-xs mt-1">Latest on-chain certificates minted from this wallet.</p>
+        </div>
+        {loadingIssuedCertificates ? (
+          <div className="px-6 py-10 flex items-center justify-center gap-2 text-sm text-slate-500">
+            <Loader2 className="w-4 h-4 animate-spin text-sky-500" />
+            Loading issued certificates...
+          </div>
+        ) : issuedCertificates.length === 0 ? (
+          <div className="px-6 py-10 text-center text-slate-400 text-sm">No certificates issued from this institution yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-slate-500">
+                <tr className="text-left">
+                  <th className="px-6 py-3 font-medium">Certificate</th>
+                  <th className="px-6 py-3 font-medium">Student</th>
+                  <th className="px-6 py-3 font-medium">Recipient</th>
+                  <th className="px-6 py-3 font-medium">Issued</th>
+                  <th className="px-6 py-3 font-medium">Status</th>
+                  <th className="px-6 py-3 font-medium text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {issuedCertificates.map((certificate) => (
+                  <tr key={certificate.tokenId.toString()} className="align-top">
+                    <td className="px-6 py-4">
+                      <div className="font-semibold text-slate-900">{certificate.displayId}</div>
+                      <div className="text-slate-500 mt-1">{certificate.metadata?.degree || "Degree unavailable"}</div>
+                      <div className="text-xs text-slate-400 mt-1">{certificate.metadata?.major || "Major unavailable"}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-slate-800">{certificate.metadata?.name || shortAddress(certificate.recipient)}</div>
+                      <div className="text-xs text-slate-400 mt-1">
+                        {certificate.metadata?.graduationYear || "—"} • {certificate.metadata?.grade || "—"}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-mono text-xs text-slate-600 break-all max-w-[200px]">{certificate.recipient}</div>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">{formatIssuedDate(certificate.issuedAt, certificate.metadata?.issuedAt)}</td>
+                    <td className="px-6 py-4">
+                      <span className={cn(
+                        "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold",
+                        certificate.revoked ? "bg-red-50 text-red-600" : "bg-green-50 text-green-700"
+                      )}>
+                        <span className={cn("w-1.5 h-1.5 rounded-full", certificate.revoked ? "bg-red-500" : "bg-green-500")} />
+                        {certificate.revoked ? "Revoked" : "Valid"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => navigate(`/certificate/${certificate.tokenId}`)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-medium transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* Revoke panel — institutions only */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6">
         <h2 className="font-semibold text-slate-900 text-sm mb-1">Revoke a Certificate</h2>
@@ -206,4 +282,24 @@ function Gate({ icon: Icon, title, desc, warn = false }: { icon: React.ElementTy
       </div>
     </div>
   );
+}
+
+
+
+function formatIssuedDate(onChainIssuedAt: bigint, metadataIssuedAt?: string): string {
+  if (metadataIssuedAt) {
+    return new Date(metadataIssuedAt).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  if (!onChainIssuedAt) return "—";
+
+  return new Date(Number(onChainIssuedAt) * 1000).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }

@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import { ethers, type Eip1193Provider, BrowserProvider, Contract  } from "ethers";
 import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
 import { CREDENCEA_ABI, CONTRACT_ADDRESS, CONTRACT_CONFIGURED } from "@/lib/contract";
-import type { Certificate, CertificateMetadata, IssueFormData } from "@/types";
+import type { Certificate, CertificateMetadata, InstitutionInfo, IssueFormData } from "@/types";
 import { uploadMetadataToIPFS, fetchMetadata, uploadImageToIPFS } from "@/lib/ipfs";
 
 function useProvider() {
@@ -23,6 +23,65 @@ function useSigner(provider: BrowserProvider | null) {
 
 function formatCertDisplayId(abbrev: string, tokenId: bigint): string {
   return `${abbrev}-${tokenId.toString().padStart(4, "0")}`;
+}
+
+function compareBigIntsDesc(a: bigint, b: bigint): number {
+  if (a === b) return 0;
+  return a > b ? -1 : 1;
+}
+
+function hasEventArgs(log: unknown): log is { args: Record<string, unknown> } {
+  return typeof log === "object" && log !== null && "args" in log;
+}
+
+async function fetchCertificateByTokenId(contract: Contract, tokenId: bigint): Promise<Certificate | null> {
+  const record = await contract.getCertificate(tokenId);
+  if (!record.exists) return null;
+
+  let displayId = `#${tokenId}`;
+  try {
+    displayId = await contract.getCertDisplayId(tokenId);
+  } catch {
+    displayId = formatCertDisplayId(record.issuerAbbrev || "CC", tokenId);
+  }
+
+  const cert: Certificate = {
+    tokenId,
+    displayId,
+    issuer: record.issuer,
+    issuerName: record.issuerName,
+    issuerAbbrev: record.issuerAbbrev,
+    issuerThemeColor: record.issuerThemeColor || "#0ea5e9",
+    issuerAccentColor: record.issuerAccentColor || "#0284c7",
+    recipient: record.recipient,
+    metadataURI: record.metadataURI,
+    revoked: record.revoked,
+    exists: record.exists,
+    issuedAt: record.issuedAt,
+  };
+
+  try {
+    cert.metadata = await fetchMetadata(record.metadataURI);
+  } catch {
+    // Best-effort metadata fetch keeps the table usable even if IPFS is slow.
+  }
+
+  return cert;
+}
+
+async function fetchInstitutionByAddress(contract: Contract, address: string): Promise<InstitutionInfo> {
+  const institution = await contract.getInstitution(address);
+  return {
+    address,
+    active: institution.active,
+    name: institution.name,
+    abbrev: institution.abbrev,
+    themeColor: institution.themeColor || "#0ea5e9",
+    accentColor: institution.accentColor || "#0284c7",
+    addedAt: institution.addedAt,
+    dailyCap: institution.dailyCap,
+    dailyIssuedCount: institution.dailyIssuedCount,
+  };
 }
 
 function useReadContract() {
@@ -201,6 +260,7 @@ export function useIssueCertificate() {
 
     const nextTokenId = (await contract.totalSupply()) + 1n;
     const displayId = formatCertDisplayId(inst.abbrev || "CC", nextTokenId);
+    const verifyUrl = `${window.location.origin}/certificate/${nextTokenId}`;
  
     // Step 1: render certificate to PNG
     onStatus("Rendering certificate image...");
@@ -210,6 +270,7 @@ export function useIssueCertificate() {
       inst.name || signerAddress,
       inst.abbrev || "CC",
       displayId,
+      verifyUrl,
       inst.themeColor || "#0e2a5c",
       inst.accentColor || "#0284c7"
     );
@@ -283,31 +344,77 @@ export function useFetchCertificate() {
   const contract = useReadContract();
   return useCallback(async (tokenId: bigint): Promise<Certificate | null> => {
     if (!contract) throw new Error("Provider not available");
-    const r = await contract.getCertificate(tokenId);
-    if (!r.exists) return null;
+    return fetchCertificateByTokenId(contract, tokenId);
+  }, [contract]);
+}
 
-    let displayId = `#${tokenId}`;
-    try {
-      displayId = await contract.getCertDisplayId(tokenId);
-    } catch { /* best-effort */ }
+export function useFetchInstitutions() {
+  const contract = useReadContract();
+  return useCallback(async (): Promise<InstitutionInfo[]> => {
+    if (!contract) throw new Error("Provider not available");
 
-    const cert: Certificate = {
-      tokenId,
-      displayId,
-      issuer: r.issuer,
-      issuerName: r.issuerName,
-      issuerAbbrev: r.issuerAbbrev,
-      issuerThemeColor: r.issuerThemeColor || "#0ea5e9",
-      issuerAccentColor: r.issuerAccentColor || "#0284c7",
-      recipient: r.recipient,
-      metadataURI: r.metadataURI,
-      revoked: r.revoked,
-      exists: r.exists,
-      issuedAt: r.issuedAt,
-    };
+    const [addedLogs, replacedLogs] = await Promise.all([
+      contract.queryFilter(contract.filters.InstitutionAdded(), 0, "latest"),
+      contract.queryFilter(contract.filters.InstitutionWalletReplaced(), 0, "latest"),
+    ]);
 
-    try { cert.metadata = await fetchMetadata(r.metadataURI); } catch { /* best-effort */ }
-    return cert;
+    const addresses = new Set<string>();
+
+    for (const log of addedLogs) {
+      if (!hasEventArgs(log)) continue;
+      const institutionAddress = log.args?.institution as string | undefined;
+      if (institutionAddress) addresses.add(institutionAddress);
+    }
+
+    for (const log of replacedLogs) {
+      if (!hasEventArgs(log)) continue;
+      const oldWallet = log.args?.oldWallet as string | undefined;
+      const newWallet = log.args?.newWallet as string | undefined;
+      if (oldWallet) addresses.add(oldWallet);
+      if (newWallet) addresses.add(newWallet);
+    }
+
+    const institutions = await Promise.all(
+      Array.from(addresses).map((institutionAddress) => fetchInstitutionByAddress(contract, institutionAddress))
+    );
+
+    return institutions
+      .filter((institution) => institution.name || institution.active)
+      .sort((left, right) => {
+        if (left.active !== right.active) return left.active ? -1 : 1;
+        return compareBigIntsDesc(left.addedAt, right.addedAt);
+      });
+  }, [contract]);
+}
+
+export function useFetchIssuedCertificatesByInstitution() {
+  const contract = useReadContract();
+  return useCallback(async (institutionAddress: string): Promise<Certificate[]> => {
+    if (!contract) throw new Error("Provider not available");
+    if (!institutionAddress) return [];
+
+    const logs = await contract.queryFilter(
+      contract.filters.CertificateIssued(null, institutionAddress, null),
+      0,
+      "latest"
+    );
+
+    const tokenIds = Array.from(
+      new Set(
+        logs
+          .map((log) => hasEventArgs(log) ? log.args?.tokenId as bigint | undefined : undefined)
+          .filter((tokenId): tokenId is bigint => tokenId !== undefined)
+          .map((tokenId) => tokenId.toString())
+      )
+    )
+      .map((tokenId) => BigInt(tokenId))
+      .sort(compareBigIntsDesc);
+
+    const certificates = await Promise.all(
+      tokenIds.map((tokenId) => fetchCertificateByTokenId(contract, tokenId))
+    );
+
+    return certificates.filter((certificate): certificate is Certificate => certificate !== null);
   }, [contract]);
 }
 

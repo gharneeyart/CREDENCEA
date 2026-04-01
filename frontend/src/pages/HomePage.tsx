@@ -1,25 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, Award, Search, ShieldCheck, ArrowRight, Lock, Zap, Globe, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { steps, features, roles } from "@/helpers";
 
-const steps = [
-  { n: "01", title: "Institution registered", desc: "Contract owner whitelists a university or school on-chain." },
-  { n: "02", title: "Certificate minted", desc: "Institution fills out a form; metadata uploads to IPFS and an SBT mints to the student's wallet." },
-  { n: "03", title: "Student shares", desc: "Student copies a link or shows a QR code to any employer or verifier." },
-  { n: "04", title: "Anyone verifies", desc: "Verifier enters wallet address or token ID. The blockchain returns pass/fail instantly — no API, no middleman." },
-];
-
-const features = [
-  { icon: Lock, title: "Soulbound (ERC-5192)", desc: "Non-transferable by design. The credential lives in the student's wallet permanently — it cannot be sold or reassigned." },
-  { icon: Zap, title: "Instant on-chain verification", desc: "No email to an admissions office. Verification happens in under a second, straight from the Ethereum ledger." },
-  { icon: Globe, title: "QR code sharing", desc: "Every certificate generates a verifiable QR link. Works anywhere — CV, LinkedIn, email footer." },
-  { icon: ShieldCheck, title: "Hardened contract security", desc: "Rate limiting, reentrancy guards, pausable emergency stop, two-step ownership, and a 30-day revocation window." },
-];
-
-const roles = [
-  { icon: Award, title: "Institution", desc: "Issue tamper-proof credentials to graduates", to: "/issue", color: "bg-sky-500" },
-  { icon: GraduationCap, title: "Student", desc: "View, share and QR-export your certificates", to: "/student", color: "bg-green-600" },
-  { icon: Search, title: "Verifier", desc: "Verify any credential on-chain — no account needed", to: "/verify", color: "bg-slate-700" },
-];
 
 export default function HomePage() {
   const navigate = useNavigate();
