@@ -87,7 +87,7 @@ export default function IssuePage() {
   if (!isInstitution) return <Gate icon={AlertTriangle} title="Not an authorised institution" desc="Your wallet has not been whitelisted. Ask the contract owner to add your address." warn />;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 space-y-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-8">
       {/* Issue form */}
       <div>
         <div className="flex items-center gap-2 mb-2">

@@ -1,21 +1,20 @@
 import { useCallback, useMemo } from "react";
-import { ethers } from "ethers";
+import { ethers, type Eip1193Provider, BrowserProvider, Contract  } from "ethers";
 import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
 import { CREDENCEA_ABI, CONTRACT_ADDRESS, CONTRACT_CONFIGURED } from "@/lib/contract";
 import type { Certificate, CertificateMetadata, IssueFormData } from "@/types";
 import { uploadMetadataToIPFS, fetchMetadata } from "@/lib/ipfs";
 
-type Eip1193Provider = Parameters<typeof ethers.BrowserProvider>[0];
 
 function useProvider() {
   const { walletProvider } = useAppKitProvider<Eip1193Provider>("eip155");
   return useMemo(() => {
     if (!walletProvider) return null;
-    return new ethers.BrowserProvider(walletProvider);
+    return new BrowserProvider(walletProvider);
   }, [walletProvider]);
 }
 
-function useSigner(provider: ethers.BrowserProvider | null) {
+function useSigner(provider: BrowserProvider | null) {
   return useCallback(async () => {
     if (!provider) throw new Error("Wallet not connected");
     if (!CONTRACT_CONFIGURED) throw new Error("Contract address not set — add VITE_CONTRACT_ADDRESS to .env");
@@ -27,7 +26,7 @@ function useReadContract() {
   const provider = useProvider();
   return useMemo(() => {
     if (!provider || !CONTRACT_CONFIGURED) return null;
-    return new ethers.Contract(CONTRACT_ADDRESS, CREDENCEA_ABI, provider);
+    return new Contract(CONTRACT_ADDRESS, CREDENCEA_ABI, provider);
   }, [provider]);
 }
 
@@ -41,7 +40,7 @@ export function useAddInstitution() {
     themeColor: string, accentColor: string, dailyCap = 0
   ) => {
     const signer = await getSigner();
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CREDENCEA_ABI, signer);
+    const contract = new Contract(CONTRACT_ADDRESS, CREDENCEA_ABI, signer);
     const tx = await contract.addInstitution(address, name, abbrev, themeColor, accentColor, dailyCap);
     await tx.wait();
     return tx;

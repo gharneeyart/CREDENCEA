@@ -4,6 +4,8 @@ import { GraduationCap, Award, Search, ShieldCheck, Menu, X, AlertTriangle } fro
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { CONTRACT_CONFIGURED } from "@/lib/contract";
+import { useIsInstitution, useIsOwner } from "@/hooks/useContract";
+import { useQuery } from "@tanstack/react-query";
 
 const navItems = [
   { to: "/issue", label: "Issue", icon: Award },
@@ -13,9 +15,46 @@ const navItems = [
 ];
 
 export default function Layout() {
-  const { isConnected } = useAppKitAccount();
+  const isInstitutionFn = useIsInstitution();
+  const { isConnected, address } = useAppKitAccount();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const isOwnerFn = useIsOwner();
+
+  const { data: isOwner } = useQuery({
+    queryKey: ["isOwner", address],
+    queryFn: () => isOwnerFn(),
+    enabled: !!address && isConnected,
+  });
+  
+  const { data: isInstitution } = useQuery({
+    queryKey: ["isInstitution", address],
+    queryFn: () => isInstitutionFn(address!),
+    enabled: !!address && isConnected,
+  });
+
+  // Helper function to render nav items
+  const renderNavItems = () => {
+    return navItems.map(({ to, label, icon: Icon }) => {
+      if (to === "/admin" && !isOwner) return null;
+      if (to === "/issue" && !isInstitution) return null;
+      
+      return (
+        <NavLink 
+          key={to} 
+          to={to}
+          onClick={() => setOpen(false)} // Close mobile menu when clicking a link
+          className={({ isActive }) => cn(
+            "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+            isActive ? "bg-sky-50 text-sky-700" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+          )}
+        >
+          <Icon className="w-4 h-4" />
+          {label}
+        </NavLink>
+      );
+    });
+  };
 
   return (
     <div className="min-h-dvh flex flex-col bg-white">
@@ -29,38 +68,43 @@ export default function Layout() {
             <span className="font-bold text-slate-900 text-lg tracking-tight">Credencea</span>
           </button>
 
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
-            {navItems.map(({ to, label, icon: Icon }) => (
-              <NavLink key={to} to={to}
-                className={({ isActive }) => cn(
-                  "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                  isActive ? "bg-sky-50 text-sky-700" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                )}>
-                <Icon className="w-4 h-4" />{label}
-              </NavLink>
-            ))}
+            {navItems.map(({ to, label, icon: Icon }) => {
+              if (to === "/admin" && !isOwner) return null;
+              if (to === "/issue" && !isInstitution) return null;
+              
+              return (
+                <NavLink 
+                  key={to} 
+                  to={to}
+                  className={({ isActive }) => cn(
+                    "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    isActive ? "bg-sky-50 text-sky-700" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </NavLink>
+              );
+            })}
           </nav>
 
           <div className="flex items-center gap-2">
             <appkit-button size="sm" />
-            <button className="md:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100"
-              onClick={() => setOpen(v => !v)}>
+            <button 
+              className="md:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100"
+              onClick={() => setOpen(v => !v)}
+            >
               {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
 
+        {/* Mobile Navigation Menu */}
         {open && (
           <div className="md:hidden border-t border-slate-100 bg-white px-4 py-2 flex flex-col gap-0.5">
-            {navItems.map(({ to, label, icon: Icon }) => (
-              <NavLink key={to} to={to} onClick={() => setOpen(false)}
-                className={({ isActive }) => cn(
-                  "flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  isActive ? "bg-sky-50 text-sky-700" : "text-slate-600"
-                )}>
-                <Icon className="w-4 h-4" />{label}
-              </NavLink>
-            ))}
+            {renderNavItems()}
           </div>
         )}
       </header>
@@ -76,7 +120,7 @@ export default function Layout() {
         </div>
       )}
 
-      {!isConnected && (
+      {isConnected === false && (
         <div className="bg-sky-50 border-b border-sky-100 text-center py-2.5 px-4">
           <p className="text-sky-700 text-sm font-medium">
             Connect your wallet to interact with Credencea
@@ -94,7 +138,6 @@ export default function Layout() {
             </div>
             <span className="font-medium text-slate-500">Credencea</span>
           </div>
-          {/* <p>Tamper-proof credentials on Ethereum · Sepolia Testnet · HackVision 2026</p> */}
         </div>
       </footer>
     </div>

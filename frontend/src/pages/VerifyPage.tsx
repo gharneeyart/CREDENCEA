@@ -21,6 +21,8 @@ export default function VerifyPage() {
       if (!query) return [];
       if (query.mode === "tokenId") {
         const cert = await fetchCert(BigInt(query.value));
+        console.log(cert);
+        
         return cert ? [cert] : [];
       }
       const ids = await fetchIds(query.value);

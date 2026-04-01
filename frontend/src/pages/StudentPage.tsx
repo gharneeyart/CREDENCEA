@@ -43,7 +43,7 @@ export default function StudentPage() {
   );
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
+    <div className="w-11/12 lg:w-10/12 mx-auto py-12">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -71,7 +71,7 @@ export default function StudentPage() {
       </div>
 
       {/* Lost wallet notice — informational only */}
-      <div className="mb-6 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 flex gap-3">
+      <div className="mb-6 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 flex gap-3 items-center ">
         <span className="text-blue-400 text-lg shrink-0">ℹ</span>
         <p className="text-blue-700 text-sm">
           <span className="font-semibold">Lost access to this wallet?</span>{" "}

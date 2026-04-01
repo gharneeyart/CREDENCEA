@@ -106,20 +106,14 @@ export default function AdminPage() {
   if (!isOwner) return <Gate icon={AlertTriangle} title="Not the contract owner" desc="Only the deployer wallet can access this page." warn />;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 space-y-6">
+    <div className="w-11/12 lg:w-10/12 mx-auto  py-12 space-y-6">
       <div>
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center">
-            <ShieldCheck className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-sm font-medium text-slate-600 uppercase tracking-wide">Admin Panel</span>
-        </div>
-        <h1 className="text-2xl font-bold text-slate-900">Contract Management</h1>
-        <p className="text-slate-500 text-sm mt-1">Manage institutions, branding, and contract-level security controls.</p>
+        <h1 className="text-2xl font-bold text-slate-900">Institution Management</h1>
+        <p className="text-slate-500 text-sm mt-1">Manage institutions, branding, and security controls.</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
         <Stat label="Certificates issued" value={totalSupply?.toString() ?? "—"} icon={CheckCircle2} color="text-sky-500" />
         <Stat label="Institutions (session)" value={String(institutions.length)} icon={Building2} color="text-green-600" />
         <Stat label="Contract" value={isPaused ? "Paused" : "Active"} icon={isPaused ? Pause : Play} color={isPaused ? "text-amber-500" : "text-green-600"} />
@@ -297,7 +291,7 @@ export default function AdminPage() {
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
         <h3 className="text-slate-600 font-semibold text-xs uppercase tracking-wide mb-3">Contract info</h3>
         <div className="space-y-1.5 text-xs font-mono">
-          {[["Address", import.meta.env.VITE_CONTRACT_ADDRESS || "not set"], ["Network", import.meta.env.VITE_CHAIN_ID === "11155111" ? "Sepolia Testnet" : "Localhost / Other"], ["Owner", address]].map(([k, v]) => (
+          {[["Address", import.meta.env.VITE_CONTRACT_ADDRESS], ["Network", import.meta.env.VITE_CHAIN_ID], ["Owner", address]].map(([k, v]) => (
             <div key={k} className="flex gap-3">
               <span className="text-slate-400 w-16 shrink-0">{k}</span>
               <span className="text-slate-700 break-all">{v}</span>
@@ -311,10 +305,12 @@ export default function AdminPage() {
 
 function Stat({ label, value, icon: Icon, color }: { label: string; value: string; icon: React.ElementType; color: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <Icon className={cn("w-4 h-4 mb-2", color)} />
-      <p className="text-xl font-bold text-slate-900">{value}</p>
+    <div className="rounded-xl border border-slate-200 bg-white p-4 flex flex-row md:flex-col items-center md:items-start gap-3">
+      <Icon className={cn("w-5 h-5 mb-2", color)} />
+      <div className="">
+        <p className="text-xl font-bold text-slate-900">{value}</p>
       <p className="text-slate-400 text-xs mt-0.5">{label}</p>
+      </div>
     </div>
   );
 }

@@ -47,10 +47,10 @@ export default function CertificateCard({ cert, showRevoke = false, onRevoke, re
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-white text-xs font-bold"
             style={{ backgroundColor: cert.revoked ? "#ef4444" : theme }}
           >
-            {cert.issuerAbbrev ? cert.issuerAbbrev.slice(0, 2) : <GraduationCap className="w-4 h-4" />}
+            {cert.issuerAbbrev ? cert.issuerAbbrev.slice(0, 3) : <GraduationCap className="w-4 h-4" />}
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold truncate" style={{ color: cert.revoked ? "#dc2626" : theme }}>
+            <p className="text-xs font-semibold truncate" style={{ color: cert.revoked ? "#dc2626" : accent }}>
               {cert.displayId}
             </p>
             <p className="text-xs text-slate-400 truncate">{cert.issuerName || cert.issuer.slice(0, 16) + "…"}</p>
@@ -65,7 +65,7 @@ export default function CertificateCard({ cert, showRevoke = false, onRevoke, re
           <div className="space-y-3">
             <div>
               <h3 className="font-semibold text-slate-900">{meta.name}</h3>
-              <p className="text-sm font-medium mt-0.5" style={{ color: theme }}>{meta.degree}</p>
+              <p className="text-sm font-medium mt-0.5" style={{ color: accent }}>{meta.degree}</p>
               <p className="text-slate-500 text-sm">{meta.major}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">

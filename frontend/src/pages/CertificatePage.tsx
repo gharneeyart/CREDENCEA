@@ -1,10 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
-import { GraduationCap, Building2, Calendar, Award, CheckCircle2, XCircle, ArrowLeft, Loader2, Copy, Check, ExternalLink, ShieldCheck } from "lucide-react";
+import { XCircle, ArrowLeft, Loader2, Copy, Check, ExternalLink } from "lucide-react";
 import { useFetchCertificate } from "@/hooks/useContract";
 import { resolveIPFS } from "@/lib/ipfs";
-import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 export default function CertificatePage() {
@@ -12,6 +11,7 @@ export default function CertificatePage() {
   const navigate = useNavigate();
   const fetchCert = useFetchCertificate();
   const [copied, setCopied] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   const verifyUrl = `${window.location.origin}/certificate/${tokenId}`;
 
   const { data: cert, isLoading, error } = useQuery({
@@ -28,19 +28,19 @@ export default function CertificatePage() {
   };
 
   if (isLoading) return (
-    <div className="flex items-center justify-center min-h-96 gap-3 text-slate-400">
-      <Loader2 className="w-5 h-5 animate-spin text-sky-500" />
-      <span className="text-sm">Loading certificate…</span>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "24rem", gap: "12px", color: "#94a3b8" }}>
+      <Loader2 style={{ width: 20, height: 20, color: "#0ea5e9", animation: "spin 1s linear infinite" }} />
+      <span style={{ fontSize: 14 }}>Loading certificate…</span>
     </div>
   );
 
   if (error || !cert || !cert.exists) return (
-    <div className="max-w-lg mx-auto px-4 py-20 text-center space-y-4">
-      <XCircle className="w-12 h-12 text-red-400 mx-auto" />
-      <h1 className="text-xl font-bold text-slate-900">Certificate not found</h1>
-      <p className="text-slate-500 text-sm">Token #{tokenId} does not exist on this contract.</p>
+    <div style={{ maxWidth: 480, margin: "0 auto", padding: "80px 16px", textAlign: "center" }}>
+      <XCircle style={{ width: 48, height: 48, color: "#f87171", margin: "0 auto 16px" }} />
+      <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Certificate not found</h1>
+      <p style={{ fontSize: 14, color: "#64748b", marginBottom: 20 }}>Token #{tokenId} does not exist on this contract.</p>
       <button onClick={() => navigate("/verify")}
-        className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50">
+        style={{ padding: "10px 20px", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: 14, cursor: "pointer" }}>
         Back to verifier
       </button>
     </div>
@@ -48,133 +48,205 @@ export default function CertificatePage() {
 
   const meta = cert.metadata;
   const ipfsUrl = cert.metadataURI ? resolveIPFS(cert.metadataURI) : null;
-  const theme = cert.issuerThemeColor || "#0ea5e9";
-  const accent = cert.issuerAccentColor || "#0284c7";
+  const theme = cert.issuerThemeColor || "#0e2a5c";
+  const accent = cert.issuerAccentColor || "#c9b97a";
+  const isRevoked = cert.revoked;
+
+  const gold = "#c9b97a";
+  const goldLight = "#d4c47e";
+  const navy = theme;
+  const parchment = "#fefcf7";
+  const parchmentBg = "#f0ece4";
+  const inkDark = "#1a1610";
+  const inkMid = "#5a4820";
+  const inkLight = "#8a7040";
+  const inkFaint = "#a08a4a";
+
+  const issueDate = meta?.issuedAt
+    ? new Date(meta.issuedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+    : cert.issuedAt > 0n
+      ? new Date(Number(cert.issuedAt) * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+      : "—";
 
   return (
-    <div className="bg-slate-50 min-h-screen">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+    <div style={{ background: parchmentBg, minHeight: "100vh", padding: "32px 16px", fontFamily: "Georgia, 'Times New Roman', serif" }}>
+      <div style={{ maxWidth: 660, margin: "0 auto" }}>
+
+        {/* Back button */}
         <button onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-slate-400 hover:text-slate-700 text-sm mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4" />Back
+          style={{ display: "flex", alignItems: "center", gap: 6, color: inkFaint, background: "none", border: "none", fontSize: 13, cursor: "pointer", marginBottom: 20, fontFamily: "inherit" }}>
+          <ArrowLeft style={{ width: 14, height: 14 }} />
+          Back
         </button>
 
-        {/* Certificate document */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-          {/* Institution-branded top bar */}
-          <div
-            className="px-8 py-5"
-            style={{ backgroundColor: cert.revoked ? "#fef2f2" : theme + "12", borderBottom: `3px solid ${cert.revoked ? "#ef4444" : theme}` }}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0"
-                  style={{ backgroundColor: cert.revoked ? "#ef4444" : theme }}>
-                  {cert.issuerAbbrev || <GraduationCap className="w-6 h-6" />}
+        {/* ── Main certificate parchment ── */}
+        <div style={{ background: parchment, border: `1px solid ${gold}`, position: "relative", overflow: "hidden" }}>
+
+          {/* Double-rule border inset */}
+          <div style={{ position: "absolute", inset: 10, border: `1px solid ${gold}`, pointerEvents: "none", zIndex: 1 }} />
+          <div style={{ position: "absolute", inset: 14, border: `0.5px solid ${goldLight}`, pointerEvents: "none", zIndex: 1 }} />
+
+          {/* Corner ornaments */}
+          {[
+            { top: 8, left: 8, transform: "none" },
+            { top: 8, right: 8, transform: "scaleX(-1)" },
+            { bottom: 8, left: 8, transform: "scaleY(-1)" },
+            { bottom: 8, right: 8, transform: "scale(-1,-1)" },
+          ].map((pos, i) => (
+            <div key={i} style={{ position: "absolute", width: 28, height: 28, zIndex: 2, ...pos }}>
+              <svg viewBox="0 0 28 28" width="28" height="28" style={{ transform: pos.transform as string }}>
+                <path d="M2 26 L2 4 Q2 2 4 2 L26 2" stroke={gold} strokeWidth="1.5" fill="none" />
+                <circle cx="4" cy="4" r="2" fill={gold} />
+              </svg>
+            </div>
+          ))}
+
+          {/* Header band */}
+          <div style={{ background: isRevoked ? "#7f1d1d" : accent, padding: "20px 56px 16px", textAlign: "center", position: "relative" }}>
+            <p style={{ fontFamily: "'Palatino Linotype', Palatino, Georgia, serif", fontSize: 15, fontWeight: 700, letterSpacing: 4, textTransform: "uppercase", color: isRevoked ? "#fca5a5" : "#e8d87a", margin: "0 0 3px" }}>
+              {cert.issuerName || "CertChain"}
+            </p>
+            <p style={{ fontSize: 10, letterSpacing: 2.5, textTransform: "uppercase", color: isRevoked ? "#fca5a5" : "#ffff", margin: 0 }}>
+              {cert.issuerAbbrev ? `${cert.issuerAbbrev} · ` : ""}Verified Academic Credential
+            </p>
+          </div>
+
+          {/* Ornament divider */}
+          <div style={{ textAlign: "center", padding: "10px 0 4px", color: gold, fontSize: 16, letterSpacing: 10 }}>— ✦ —</div>
+
+          {/* Body */}
+          <div style={{ padding: "8px 60px 32px", textAlign: "center" }}>
+
+            {isRevoked && (
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "8px 16px", marginBottom: 16, fontSize: 12, color: "#dc2626", letterSpacing: 1, textTransform: "uppercase", fontWeight: 700 }}>
+                ✕ This certificate has been revoked
+              </div>
+            )}
+
+            <p style={{ fontStyle: "italic", fontSize: 14, color: inkMid, letterSpacing: 1, marginBottom: 6 }}>
+              This is to certify that
+            </p>
+
+            <div style={{ fontSize: 36, fontFamily: "'Palatino Linotype', Palatino, Georgia, serif", fontStyle: "italic", fontWeight: 400, color: navy, lineHeight: 1.1, margin: "4px 0 16px", paddingBottom: 16, borderBottom: `1.5px solid ${gold}` }}>
+              {meta?.name || cert.recipient.slice(0, 8) + "…" + cert.recipient.slice(-6)}
+            </div>
+
+            <p style={{ fontSize: 11, letterSpacing: 2.5, textTransform: "uppercase", color: inkLight, marginBottom: 8 }}>
+              Has been awarded the degree of
+            </p>
+
+            <div style={{ fontFamily: "'Palatino Linotype', Palatino, Georgia, serif", fontSize: 22, fontWeight: 700, color: navy, marginBottom: 4 }}>
+              {meta?.degree || "—"}
+            </div>
+
+            <div style={{ fontSize: 15, fontStyle: "italic", color: inkMid, marginBottom: 20 }}>
+              {meta?.major ? `in ${meta.major}` : ""}
+            </div>
+
+            <p style={{ fontSize: 13, color: inkMid, lineHeight: 1.75, maxWidth: 400, margin: "0 auto 24px" }}>
+              Having fulfilled all requirements prescribed by the Faculty and having been recommended
+              by the Academic Council, is hereby granted all rights, privileges, and responsibilities
+              pertaining thereto.
+            </p>
+
+            {/* Meta row */}
+            <div style={{ display: "flex", justifyContent: "center", gap: 40, borderTop: `0.5px solid ${goldLight}`, borderBottom: `0.5px solid ${goldLight}`, padding: "14px 0", marginBottom: 24 }}>
+              {[
+                { label: "Graduated", value: meta?.graduationYear || "—" },
+                { label: "Grade", value: meta?.grade || "—" },
+                { label: "Date Issued", value: issueDate },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: inkFaint, marginBottom: 3 }}>{label}</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: inkDark }}>{value}</div>
                 </div>
-                <div>
-                  <p className="font-bold text-slate-900 text-lg">{cert.issuerName || "Credencea"}</p>
-                  <p className="text-xs font-mono mt-0.5" style={{ color: cert.revoked ? "#dc2626" : theme }}>
-                    {cert.displayId} · ERC-5192 Soulbound Token
-                  </p>
+              ))}
+            </div>
+
+            {/* Signatures + seal */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "0 8px", gap: 16 }}>
+              <SigBlock name="Registrar" title="Academic Registrar" />
+
+              {/* Seal */}
+              <div style={{ width: 88, height: 88, borderRadius: "50%", border: `2px solid ${gold}`, background: parchment, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
+                <div style={{ position: "absolute", inset: 4, borderRadius: "50%", border: `1px solid ${gold}` }} />
+                <div style={{ fontFamily: "'Palatino Linotype', Palatino, Georgia, serif", fontSize: 20, fontWeight: 700, color: navy, lineHeight: 1 }}>
+                  {cert.issuerAbbrev || "CC"}
+                </div>
+                <div style={{ fontSize: 7, letterSpacing: 1.5, textTransform: "uppercase", color: inkLight, marginTop: 2 }}>
+                  Official Seal
                 </div>
               </div>
-              <span
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shrink-0"
-                style={cert.revoked
-                  ? { backgroundColor: "#fee2e2", color: "#dc2626" }
-                  : { backgroundColor: theme + "20", color: theme }}
-              >
-                {cert.revoked ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                {cert.revoked ? "REVOKED" : "VALID"}
-              </span>
+
+              <SigBlock name="Chancellor" title="Head of Institution" />
             </div>
           </div>
 
-          {/* Main body */}
-          <div className="px-8 py-7">
-            {meta ? (
-              <>
-                <p className="text-xs text-slate-400 uppercase tracking-widest font-medium mb-2">This certifies that</p>
-                <h1 className="text-3xl font-extrabold text-slate-900 mb-1">{meta.name}</h1>
-                <p className="text-lg font-semibold mb-0.5" style={{ color: theme }}>{meta.degree}</p>
-                <p className="text-slate-500 mb-6">Major in {meta.major}</p>
-                <div className="grid grid-cols-2 gap-4 py-5 border-t border-b border-slate-100">
-                  <Detail icon={Building2} label="Institution" value={meta.institution} />
-                  <Detail icon={Calendar} label="Graduation" value={meta.graduationYear} />
-                  <Detail icon={Award} label="Result" value={meta.grade} />
-                  <Detail icon={Calendar} label="Issued"
-                    value={new Date(meta.issuedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })} />
-                </div>
-                {meta.description && <p className="text-slate-500 text-sm leading-relaxed mt-5">{meta.description}</p>}
-              </>
-            ) : (
-              <p className="text-slate-400 text-sm font-mono break-all">{cert.metadataURI}</p>
-            )}
+          {/* Footer band */}
+          <div style={{ background: isRevoked ? "#7f1d1d" : accent, padding: "10px 48px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, letterSpacing: 1.5, color: "#ffff" }}>
+              {cert.displayId} · ERC-5192 · ETHEREUM
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", color: isRevoked ? "#fca5a5" : "#5dca90" }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: isRevoked ? "#ef4444" : "#5dca90" }} />
+              {isRevoked ? "Revoked" : "Verified on-chain"}
+            </div>
+            <span style={{ fontSize: 9, letterSpacing: 1, color: "#4a5e88" }}>CertChain</span>
           </div>
 
-          {/* Provenance */}
-          <div className="px-8 py-5 border-t border-slate-100" style={{ backgroundColor: theme + "06" }}>
-            <div className="flex items-center gap-1.5 mb-3">
-              <ShieldCheck className="w-3.5 h-3.5" style={{ color: theme }} />
-              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: theme }}>On-chain provenance</p>
-            </div>
-            <div className="space-y-1.5 text-xs font-mono">
-              <Prov label="Issuer" value={cert.issuerName ? `${cert.issuerName} (${cert.issuerAbbrev})` : cert.issuer} />
-              <Prov label="Recipient" value={cert.recipient} />
-              {cert.issuedAt > 0n && <Prov label="Block time" value={new Date(Number(cert.issuedAt) * 1000).toUTCString()} />}
-              <Prov label="Metadata" value={cert.metadataURI} link={ipfsUrl ?? undefined} />
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="px-8 py-4 border-t border-slate-100 flex flex-wrap gap-2">
+          {/* Action buttons */}
+          <div style={{ display: "flex", gap: 8, padding: "14px 20px", background: "#f5f0e4", borderTop: `1px solid ${gold}` }}>
             <button onClick={copyLink}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium transition-colors">
-              {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+              style={{ flex: 1, padding: "9px 12px", border: `1px solid ${gold}`, background: parchment, borderRadius: 6, fontFamily: "Georgia, serif", fontSize: 12, color: inkMid, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              {copied ? <Check style={{ width: 14, height: 14, color: "#16a34a" }} /> : <Copy style={{ width: 14, height: 14 }} />}
               {copied ? "Copied!" : "Copy link"}
+            </button>
+            <button onClick={() => setShowQR(v => !v)}
+              style={{ flex: 1, padding: "9px 12px", border: `1px solid ${gold}`, background: parchment, borderRadius: 6, fontFamily: "Georgia, serif", fontSize: 12, color: inkMid, cursor: "pointer" }}>
+              {showQR ? "Hide QR" : "Show QR"}
             </button>
             {ipfsUrl && (
               <a href={ipfsUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium transition-colors">
-                <ExternalLink className="w-3.5 h-3.5" />View on IPFS
+                style={{ flex: 1, padding: "9px 12px", border: `1px solid ${accent}`, background: accent, borderRadius: 6, fontFamily: "Georgia, serif", fontSize: 12, color: "#e8d87a", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, textDecoration: "none" }}>
+                <ExternalLink style={{ width: 13, height: 13 }} />
+                View on IPFS
               </a>
             )}
           </div>
         </div>
 
-        {/* QR */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col items-center gap-4">
-          <p className="text-slate-500 text-sm font-medium">Verification QR Code</p>
-          <div className="border border-slate-200 rounded-xl p-4">
-            <QRCodeSVG value={verifyUrl} size={180} fgColor={accent} />
+        {/* QR panel */}
+        {showQR && (
+          <div style={{ background: parchment, border: `1px solid ${gold}`, padding: "18px 24px", marginTop: 12, display: "flex", alignItems: "center", gap: 20 }}>
+            <div style={{ border: `1px solid ${gold}`, borderRadius: 6, padding: 10, background: "#fff", flexShrink: 0 }}>
+              <QRCodeSVG value={verifyUrl} size={88} fgColor={navy} />
+            </div>
+            <div>
+              <div style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: inkFaint, marginBottom: 5 }}>
+                Verification QR Code
+              </div>
+              <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: inkMid, wordBreak: "break-all", marginBottom: 5 }}>
+                {verifyUrl}
+              </div>
+              <div style={{ fontSize: 11, fontStyle: "italic", color: inkFaint }}>
+                Scan to verify this credential on the Ethereum blockchain
+              </div>
+            </div>
           </div>
-          <p className="text-slate-400 text-xs text-center break-all max-w-xs">{verifyUrl}</p>
-        </div>
+        )}
+
       </div>
     </div>
   );
 }
 
-function Detail({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+function SigBlock({ name, title }: { name: string; title: string }) {
   return (
-    <div className="flex items-start gap-2.5">
-      <Icon className="w-4 h-4 text-slate-300 mt-0.5 shrink-0" />
-      <div>
-        <p className="text-slate-400 text-xs">{label}</p>
-        <p className="text-slate-800 font-semibold text-sm mt-0.5">{value}</p>
+    <div style={{ textAlign: "center", flex: 1 }}>
+      <div style={{ width: 120, borderBottom: "1px solid #4a3c1a", margin: "0 auto 4px", height: 32, display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 2 }}>
+        <span style={{ fontFamily: "'Palatino Linotype', Palatino, Georgia, serif", fontStyle: "italic", fontSize: 13, color: "#0e2a5c" }}>{name}</span>
       </div>
-    </div>
-  );
-}
-
-function Prov({ label, value, link }: { label: string; value: string; link?: string }) {
-  return (
-    <div className="flex gap-3">
-      <span className="text-slate-400 w-20 shrink-0">{label}</span>
-      {link
-        ? <a href={link} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:text-sky-800 break-all">{value}</a>
-        : <span className="text-slate-600 break-all">{value}</span>}
+      <div style={{ fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", color: "#8a7040", marginTop: 2 }}>{title}</div>
     </div>
   );
 }
