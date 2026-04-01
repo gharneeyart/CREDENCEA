@@ -1,6 +1,7 @@
 import { createAppKit } from "@reown/appkit";
 import { EthersAdapter } from "@reown/appkit-adapter-ethers";
 import { sepolia, hardhat } from "@reown/appkit/networks";
+import type { AppKitNetwork } from "@reown/appkit/networks";
 import { CHAIN_ID } from "@/lib/contract";
 
 const projectId = import.meta.env.VITE_REOWN_PROJECT_ID as string;
@@ -12,10 +13,10 @@ if (!projectId) {
 const ethersAdapter = new EthersAdapter();
 
 // Pick active network based on VITE_CHAIN_ID
-const networks =
+const networks: [AppKitNetwork, ...AppKitNetwork[]] =
   CHAIN_ID === 31337
-    ? ([hardhat, sepolia] as const)
-    : ([sepolia, hardhat] as const);
+    ? [hardhat, sepolia]
+    : [sepolia, hardhat];
 
 export const appKit = createAppKit({
   adapters: [ethersAdapter],

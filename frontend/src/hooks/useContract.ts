@@ -3,8 +3,7 @@ import { ethers, type Eip1193Provider, BrowserProvider, Contract  } from "ethers
 import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
 import { CREDENCEA_ABI, CONTRACT_ADDRESS, CONTRACT_CONFIGURED } from "@/lib/contract";
 import type { Certificate, CertificateMetadata, IssueFormData } from "@/types";
-import { uploadMetadataToIPFS, fetchMetadata } from "@/lib/ipfs";
-
+import { uploadMetadataToIPFS, fetchMetadata, uploadImageToIPFS } from "@/lib/ipfs";
 
 function useProvider() {
   const { walletProvider } = useAppKitProvider<Eip1193Provider>("eip155");
@@ -20,6 +19,10 @@ function useSigner(provider: BrowserProvider | null) {
     if (!CONTRACT_CONFIGURED) throw new Error("Contract address not set — add VITE_CONTRACT_ADDRESS to .env");
     return provider.getSigner();
   }, [provider]);
+}
+
+function formatCertDisplayId(abbrev: string, tokenId: bigint): string {
+  return `${abbrev}-${tokenId.toString().padStart(4, "0")}`;
 }
 
 function useReadContract() {
@@ -130,6 +133,48 @@ export function useExecuteRecovery() {
 
 // ─── Issuance ──────────────────────────────────────────────────────────────
 
+// export function useIssueCertificate() {
+//   const provider = useProvider();
+//   const getSigner = useSigner(provider);
+//   return useCallback(async (
+//     formData: IssueFormData,
+//     onStatus: (s: string) => void
+//   ): Promise<bigint> => {
+//     const signer = await getSigner();
+//     const contract = new ethers.Contract(CONTRACT_ADDRESS, CREDENCEA_ABI, signer);
+//     const signerAddress = await signer.getAddress();
+//     const inst = await contract.institutions(signerAddress);
+
+//     const metadata: CertificateMetadata = {
+//       name: formData.studentName,
+//       degree: formData.degree,
+//       major: formData.major,
+//       institution: inst.name || signerAddress,
+//       graduationYear: formData.graduationYear,
+//       grade: formData.grade,
+//       issuedAt: new Date().toISOString(),
+//       description: formData.description,
+//     };
+
+//     onStatus("Uploading metadata to IPFS...");
+//     const metadataURI = await uploadMetadataToIPFS(metadata);
+
+//     onStatus("Sending transaction...");
+//     const tx = await contract.issueCertificate(formData.recipientAddress, metadataURI);
+//     onStatus("Waiting for confirmation...");
+//     const receipt = await tx.wait();
+
+//     const iface = new ethers.Interface(CREDENCEA_ABI);
+//     for (const log of receipt.logs) {
+//       try {
+//         const parsed = iface.parseLog(log);
+//         if (parsed?.name === "CertificateIssued") return parsed.args.tokenId as bigint;
+//       } catch { /* skip */ }
+//     }
+//     return 0n;
+//   }, [getSigner]);
+// }
+
 export function useIssueCertificate() {
   const provider = useProvider();
   const getSigner = useSigner(provider);
@@ -141,6 +186,7 @@ export function useIssueCertificate() {
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CREDENCEA_ABI, signer);
     const signerAddress = await signer.getAddress();
     const inst = await contract.institutions(signerAddress);
+ 
 
     const metadata: CertificateMetadata = {
       name: formData.studentName,
@@ -153,14 +199,35 @@ export function useIssueCertificate() {
       description: formData.description,
     };
 
+    const nextTokenId = (await contract.totalSupply()) + 1n;
+    const displayId = formatCertDisplayId(inst.abbrev || "CC", nextTokenId);
+ 
+    // Step 1: render certificate to PNG
+    onStatus("Rendering certificate image...");
+    const { renderCertificateToBlob } = await import("@/lib/renderCertificate");
+    const certBlob = await renderCertificateToBlob(
+      metadata,
+      inst.name || signerAddress,
+      inst.abbrev || "CC",
+      displayId,
+      inst.themeColor || "#0e2a5c",
+      inst.accentColor || "#0284c7"
+    );
+ 
+    // Step 2: upload PNG to IPFS
+    onStatus("Uploading certificate image to IPFS...");
+    const filename = `Credencea_${inst.abbrev || "CC"}_${formData.studentName.replace(/\s+/g, "_")}_${Date.now()}.png`;
+    const imageURI = await uploadImageToIPFS(certBlob, filename);
+ 
+    // Step 3: upload OpenSea-compatible metadata JSON pointing to the image
     onStatus("Uploading metadata to IPFS...");
-    const metadataURI = await uploadMetadataToIPFS(metadata);
-
+    const metadataURI = await uploadMetadataToIPFS(metadata, imageURI);
+ 
     onStatus("Sending transaction...");
     const tx = await contract.issueCertificate(formData.recipientAddress, metadataURI);
     onStatus("Waiting for confirmation...");
     const receipt = await tx.wait();
-
+ 
     const iface = new ethers.Interface(CREDENCEA_ABI);
     for (const log of receipt.logs) {
       try {
