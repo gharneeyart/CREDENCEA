@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useAppKitAccount } from "@reown/appkit/react";
 import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { AlertTriangle, Loader2, Pause, Play, Plus, RefreshCw } from "lucide-react";
