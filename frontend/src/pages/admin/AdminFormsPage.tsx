@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 const inputClassName = "w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-900 placeholder-slate-400 transition focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400";
 
 export default function AdminFormsPage() {
-  const { address } = useAppKitAccount();
   const addInstitutionFn = useAddInstitution();
   const replaceInstitutionWalletFn = useReplaceInstitutionWallet();
   const pauseContractFn = usePauseContract();

@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, ShieldCheck, TableProperties, Wrench } from "lucide-react";
 import { DashboardShell, type DashboardNavItem } from "@/components/dashboard/DashboardShell";
 import { Gate } from "@/components/ui/Gate";
-import { shortAddress } from "@/helpers";
 import { useIsOwner } from "@/hooks/useContract";
 
 const adminNavItems: DashboardNavItem[] = [
