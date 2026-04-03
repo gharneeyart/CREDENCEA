@@ -51,3 +51,20 @@ export const roles = [
   { icon: Search, title: "Verifier", desc: "Verify any credential on-chain — no account needed", to: "/verify", color: "bg-slate-700" },
 ];
 
+export function formatIssuedDate(onChainIssuedAt: bigint, metadataIssuedAt?: string): string {
+  if (metadataIssuedAt) {
+    return new Date(metadataIssuedAt).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  if (!onChainIssuedAt) return "—";
+
+  return new Date(Number(onChainIssuedAt) * 1000).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}

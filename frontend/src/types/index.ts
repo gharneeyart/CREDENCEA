@@ -48,4 +48,27 @@ export interface IssueFormData {
   description: string;
 }
 
+export interface BulkIssueRow extends IssueFormData {
+  rowNumber: number;
+}
+
+export interface BulkIssueProgress {
+  total: number;
+  prepared: number;
+  finalized: number;
+  currentBatch: number;
+  totalBatches: number;
+  phase: "idle" | "preparing" | "issuing" | "success" | "error";
+  message: string;
+}
+
+export interface BulkIssueResult {
+  rowNumber: number;
+  studentName: string;
+  recipientAddress: string;
+  status: "success" | "failed";
+  tokenId?: bigint;
+  error?: string;
+}
+
 export type TxStatus = "idle" | "uploading" | "pending" | "success" | "error";

@@ -1,11 +1,12 @@
 import { useAppKitAccount } from "@reown/appkit/react";
 import { useQuery } from "@tanstack/react-query";
-import { GraduationCap, Loader2, RefreshCw, Search } from "lucide-react";
-import { useFetchCertsByRecipient, useFetchCertificate } from "@/hooks/useContract";
+import { AlertTriangle, GraduationCap, Loader2, RefreshCw, Search } from "lucide-react";
+import { useFetchCertsByRecipient, useFetchCertificate, useIsInstitution, useIsOwner } from "@/hooks/useContract";
 import CertificateCard from "@/components/CertificateCard";
 import type { Certificate } from "@/types";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { Gate } from "@/components/ui/Gate";
 
 type Filter = "all" | "valid" | "revoked";
 
@@ -13,7 +14,21 @@ export default function StudentPage() {
   const { isConnected, address } = useAppKitAccount();
   const fetchIds = useFetchCertsByRecipient();
   const fetchCert = useFetchCertificate();
+  const isInstitutionFn = useIsInstitution();
+  const isOwnerFn = useIsOwner();
   const [filter, setFilter] = useState<Filter>("all");
+
+  const { data: isOwner, isLoading: ownerLoading } = useQuery({
+    queryKey: ["isOwner", address],
+    queryFn: isOwnerFn,
+    enabled: !!address && isConnected,
+  });
+
+  const { data: isInstitution, isLoading: institutionLoading } = useQuery({
+    queryKey: ["isInstitution", address],
+    queryFn: () => isInstitutionFn(address!),
+    enabled: !!address && isConnected,
+  });
 
   const { data, isLoading, error, refetch, isFetching } = useQuery<Certificate[]>({
     queryKey: ["studentCerts", address],
@@ -22,7 +37,7 @@ export default function StudentPage() {
       const certs = await Promise.all(ids.map(id => fetchCert(id)));
       return certs.filter(Boolean) as Certificate[];
     },
-    enabled: !!address && isConnected,
+    enabled: !!address && isConnected && !isOwner && !isInstitution,
     staleTime: 20_000,
   });
 
@@ -42,8 +57,24 @@ export default function StudentPage() {
     </div>
   );
 
+  if (ownerLoading || institutionLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <Loader2 className="w-5 h-5 animate-spin text-sky-500" />
+      </div>
+    );
+  }
+
+  if (isOwner) {
+    return <Gate icon={AlertTriangle} title="Student page unavailable" desc="Owner wallets cannot access the student page. Use the admin dashboard instead." warn />;
+  }
+
+  if (isInstitution) {
+    return <Gate icon={AlertTriangle} title="Student page unavailable" desc="Institution wallets cannot access the student page. Use the institution dashboard instead." warn />;
+  }
+
   return (
-    <div className="w-11/12 lg:w-10/12 mx-auto py-12">
+    <div className="w-11/12 mx-auto py-12">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-1">

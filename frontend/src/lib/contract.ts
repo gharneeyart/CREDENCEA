@@ -1,4 +1,26 @@
 export const CREDENCEA_ABI = [
+  // Custom errors
+  "error NotAnInstitution()",
+  "error AlreadyInstitution()",
+  "error SoulboundCannotTransfer()",
+  "error TokenDoesNotExist()",
+  "error TokenAlreadyRevoked()",
+  "error NotTokenIssuer()",
+  "error ZeroAddress()",
+  "error EmptyString()",
+  "error URITooLong()",
+  "error BatchTooLarge()",
+  "error DailyCapExceeded(uint256 issued, uint256 cap)",
+  "error RevocationWindowExpired(uint256 issuedAt, uint256 window)",
+  "error NotPendingOwner()",
+  "error ArrayLengthMismatch()",
+  "error AbbrevTooLong()",
+  "error AbbrevAlreadyTaken()",
+  "error RecoveryNotActive()",
+  "error RecoveryCooldownNotMet()",
+  "error NotTokenRecipient()",
+  "error SameAddress()",
+
   // Institution management
   "function addInstitution(address institution, string name, string abbrev, string themeColor, string accentColor, uint256 dailyCap) external",
   "function removeInstitution(address institution) external",

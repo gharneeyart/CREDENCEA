@@ -32,10 +32,15 @@ export default function Nav() {
     enabled: !!address && isConnected,
   });
 
-    const renderNavItems = () => {
+  const canAccessAdmin = Boolean(isOwner);
+  const canAccessIssue = Boolean(isInstitution) && !isOwner;
+  const canAccessStudent = !isConnected || (!isOwner && !isInstitution);
+
+  const renderNavItems = () => {
     return navItems.map(({ to, label, icon: Icon }) => {
-      if (to === "/admin" && !isOwner) return null;
-      if (to === "/issue" && !isInstitution) return null;
+      if (to === "/admin" && !canAccessAdmin) return null;
+      if (to === "/issue" && !canAccessIssue) return null;
+      if (to === "/student" && !canAccessStudent) return null;
       
       return (
         <NavLink 
@@ -55,7 +60,7 @@ export default function Nav() {
   };
     return (
          <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
-        <div className="w-11/12 lg:w-10/12 mx-auto h-16 flex items-center justify-between gap-4">
+        <div className="w-11/12  mx-auto h-16 flex items-center justify-between gap-4">
           <button onClick={() => navigate("/")} className="flex items-center gap-2.5 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center">
               <GraduationCap className="w-5 h-5 text-white" />
@@ -66,8 +71,9 @@ export default function Nav() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map(({ to, label, icon: Icon }) => {
-              if (to === "/admin" && !isOwner) return null;
-              if (to === "/issue" && !isInstitution) return null;
+              if (to === "/admin" && !canAccessAdmin) return null;
+              if (to === "/issue" && !canAccessIssue) return null;
+              if (to === "/student" && !canAccessStudent) return null;
               
               return (
                 <NavLink 

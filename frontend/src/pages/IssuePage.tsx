@@ -6,8 +6,10 @@ import { useIssueCertificate, useIsInstitution, useRevokeCertificate, useFetchIs
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import type { IssueFormData, TxStatus } from "@/types";
-import { shortAddress, DEGREES } from "@/helpers";
+import { shortAddress, DEGREES, formatIssuedDate } from "@/helpers";
 import { cn } from "@/lib/utils";
+import { Field } from "@/components/ui/Field";
+import { Gate } from "@/components/ui/Gate";
 
 
 
@@ -94,7 +96,7 @@ export default function IssuePage() {
   if (!isInstitution) return <Gate icon={AlertTriangle} title="Not an authorised institution" desc="Your wallet has not been whitelisted. Ask the contract owner to add your address." warn />;
 
   return (
-    <div className="w-11/12 lg:w-10/12  mx-auto px-4 sm:px-6 py-12 space-y-8">
+    <div className="w-11/12 mx-auto px-4 sm:px-6 py-12 space-y-8">
       {/* Issue form */}
       <div>
         <div className="flex items-center gap-2 mb-2">
@@ -259,47 +261,10 @@ export default function IssuePage() {
   );
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-slate-700">
-        {label}{required && <span className="text-sky-500 ml-0.5">*</span>}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-function Gate({ icon: Icon, title, desc, warn = false }: { icon: React.ElementType; title: string; desc: string; warn?: boolean }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-96 text-center px-4 gap-4">
-      <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center", warn ? "bg-amber-50" : "bg-sky-50")}>
-        <Icon className={cn("w-8 h-8", warn ? "text-amber-500" : "text-sky-500")} />
-      </div>
-      <div>
-        <h2 className="text-xl font-bold text-slate-900 mb-1">{title}</h2>
-        <p className="text-slate-500 max-w-sm text-sm leading-relaxed">{desc}</p>
-      </div>
-    </div>
-  );
-}
 
 
 
-function formatIssuedDate(onChainIssuedAt: bigint, metadataIssuedAt?: string): string {
-  if (metadataIssuedAt) {
-    return new Date(metadataIssuedAt).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  }
 
-  if (!onChainIssuedAt) return "—";
 
-  return new Date(Number(onChainIssuedAt) * 1000).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+
+

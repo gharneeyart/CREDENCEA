@@ -86,7 +86,7 @@ export async function renderCertificateToBlob(
       </svg>
 
       <!-- Header band -->
-      <div style="background:${accent};padding:16px 56px 14px;text-align:center;">
+      <div style="background:${theme};padding:16px 56px 14px;text-align:center;">
         <div style="font-size:15px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#e8d87a;margin:0 0 2px;">${institutionName}</div>
         <div style="font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#7a8fb8;">${institutionAbbrev} · Verified Academic Credential</div>
       </div>
@@ -97,11 +97,11 @@ export async function renderCertificateToBlob(
       <!-- Body -->
       <div style="padding:4px 72px 20px;text-align:center;">
         <p style="font-style:italic;font-size:13px;color:${inkMid};letter-spacing:1px;margin:0 0 4px;">This is to certify that</p>
-        <div style="font-size:34px;font-style:italic;font-weight:400;color:${theme};line-height:1.1;margin:2px 0 12px;padding-bottom:12px;border-bottom:1.5px solid ${gold};">
+        <div style="font-size:34px;font-style:italic;font-weight:400;color:${accent};line-height:1.1;margin:2px 0 12px;padding-bottom:12px;border-bottom:1.5px solid ${gold};">
           ${metadata.name}
         </div>
         <p style="font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:${inkLight};margin:0 0 6px;">Has been awarded the degree of</p>
-        <div style="font-size:20px;font-weight:700;color:${theme};margin:0 0 3px;">${metadata.degree}</div>
+        <div style="font-size:20px;font-weight:700;color:${accent};margin:0 0 3px;">${metadata.degree}</div>
         <div style="font-size:14px;font-style:italic;color:${inkMid};margin:0 0 14px;">in ${metadata.major}</div>
         <p style="font-size:11px;color:${inkMid};line-height:1.7;max-width:500px;margin:0 auto 16px;">
           Having fulfilled all requirements prescribed by the Faculty and having been recommended
@@ -127,7 +127,7 @@ export async function renderCertificateToBlob(
         <!-- Signatures + seal -->
         <div style="display:flex;justify-content:space-between;align-items:flex-end;padding:0 20px;gap:16px;">
           <div style="text-align:center;flex:1;">
-            <div style="width:120px;border-bottom:1px solid #4a3c1a;margin:0 auto 3px;height:28px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;">
+            <div style="width:120px;border-bottom:1px solid #4a3c1a;margin:0 auto 4px;height:32px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;">
               <span style="font-style:italic;font-size:12px;color:${accent};">Registrar</span>
             </div>
             <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:${inkLight};">Academic Registrar</div>
@@ -136,11 +136,11 @@ export async function renderCertificateToBlob(
           <div style="width:76px;height:76px;border-radius:50%;border:2px solid ${gold};background:${parchment};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;position:relative;">
             <div style="position:absolute;inset:4px;border-radius:50%;border:1px solid ${gold};"></div>
             <div style="font-size:18px;font-weight:700;color:${theme};line-height:1;">${institutionAbbrev}</div>
-            <div style="font-size:6px;letter-spacing:1px;text-transform:uppercase;color:${inkLight};margin-top:1px;">Official Seal</div>
+            <div style="font-size:6px;letter-spacing:1.5px;text-transform:uppercase;color:${inkLight};margin-top:1px;">Official Seal</div>
           </div>
 
           <div style="text-align:center;flex:1;">
-            <div style="width:120px;border-bottom:1px solid #4a3c1a;margin:0 auto 3px;height:28px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;">
+            <div style="width:120px;border-bottom:1px solid #4a3c1a;margin:0 auto 4px;height:32px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;">
               <span style="font-style:italic;font-size:12px;color:${accent};">Chancellor</span>
             </div>
             <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:${inkLight};">Head of Institution</div>
@@ -156,7 +156,7 @@ export async function renderCertificateToBlob(
       </div>
 
       <!-- Footer band -->
-      <div style="background:${accent};padding:9px 48px;display:flex;align-items:center;justify-content:space-between;position:absolute;bottom:0;left:0;right:0;">
+      <div style="background:${theme};padding:9px 48px;display:flex;align-items:center;justify-content:space-between;position:absolute;bottom:0;left:0;right:0;">
         <span style="font-family:'Courier New',monospace;font-size:8px;letter-spacing:1.5px;color:#7a8fb8;">${displayId} · ERC-5192 · ETHEREUM</span>
         <div style="display:flex;align-items:center;gap:5px;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#5dca90;">
           <div style="width:5px;height:5px;border-radius:50%;background:#5dca90;"></div>
