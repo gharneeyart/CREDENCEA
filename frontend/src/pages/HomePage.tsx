@@ -21,7 +21,14 @@ export default function HomePage() {
           Credencea issues degree certificates as blockchain-native soulbound tokens.
           Any employer anywhere in the world can verify in one second — no PDFs, no phone calls, no fraud.
         </p>
+        <p className="text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed mb-10">
+          Institutions now self-serve the first step: apply, wait for owner approval, then activate issuance from their own wallet.
+        </p>
         <div className="flex flex-wrap justify-center gap-3">
+          <button onClick={() => navigate("/onboard")}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition-colors shadow-sm">
+            Apply as an institution <ArrowRight className="w-4 h-4" />
+          </button>
           <button onClick={() => navigate("/verify")}
             className="flex items-center gap-2 px-6 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-semibold text-sm transition-colors shadow-sm">
             Verify a credential <ArrowRight className="w-4 h-4" />

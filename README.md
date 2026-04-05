@@ -79,12 +79,36 @@ npm run dev
 npm run build
 ```
 
+### Self-Onboarding Flow
+
+- Public institution application form: `/onboard`
+- Application status lookup: `/onboard/status`
+- Owner review queue: `/admin/applications`
+
+The onboarding API lives under `frontend/api/onboard/*`.
+
+- `POST /api/onboard` accepts public institution applications.
+- `GET /api/onboard?wallet=0x...` returns the application status history for a wallet.
+- `GET /api/onboard` returns the queue consumed by the admin panel.
+- `POST /api/onboard/review` records approvals and rejections.
+
+Approval security:
+
+- Approvals are only recorded after the API verifies a successful on-chain `addInstitution(...)` transaction from the current contract owner.
+- Rejections require an owner wallet signature.
+
+Persistence:
+
+- If `CREDENCEA_REST_API_KV_REST_API_URL` and `CREDENCEA_REST_API_KV_REST_API_TOKEN` are set, the API stores applications in the configured Vercel KV / Upstash Redis instance.
+- Otherwise it falls back to a local JSON file in `/tmp`, which is useful for local development but not durable across serverless cold starts.
+
 ---
 
 ## Features
 
 - **ERC-5192 Soulbound Tokens** — non-transferable, permanently tied to student wallets
 - **Multi-institution** — owner whitelists authorized issuer institutions
+- **Self-serve institution onboarding** — institutions apply from a public form, the owner reviews a queue, then activates approved wallets on-chain
 - **IPFS metadata** — certificate data stored on IPFS via Pinata, hash on-chain
 - **QR code verification** — every certificate gets a verifiable QR link
 - **Revocation** — institutions can revoke certificates (e.g. on misconduct)

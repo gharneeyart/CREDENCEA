@@ -32,10 +32,10 @@ export function formatDate(timestamp: bigint): string {
 }
 
 export const steps = [
-  { n: "01", title: "Institution registered", desc: "Contract owner whitelists a university or school on-chain." },
-  { n: "02", title: "Certificate minted", desc: "Institution fills out a form; metadata uploads to IPFS and an SBT mints to the student's wallet." },
-  { n: "03", title: "Student shares", desc: "Student copies a link or shows a QR code to any employer or verifier." },
-  { n: "04", title: "Anyone verifies", desc: "Verifier enters wallet address or token ID. The blockchain returns pass/fail instantly — no API, no middleman." },
+  { n: "01", title: "Institution applies", desc: "A school or professional body submits its wallet, website, location, and brand colours through the public onboarding form." },
+  { n: "02", title: "Owner approves", desc: "The Credencea owner reviews the application and whitelists the institution on-chain with one admin action." },
+  { n: "03", title: "Certificates mint", desc: "Once approved, the institution can upload metadata to IPFS and issue soulbound certificates from its own dashboard." },
+  { n: "04", title: "Anyone verifies", desc: "Students share a wallet or token link, and verifiers confirm authenticity instantly from the blockchain." },
 ];
 
 export const features = [
@@ -46,7 +46,7 @@ export const features = [
 ];
 
 export const roles = [
-  { icon: Award, title: "Institution", desc: "Issue tamper-proof credentials to graduates", to: "/issue", color: "bg-sky-500" },
+  { icon: Award, title: "Institution", desc: "Apply once, get approved, and then issue tamper-proof credentials", to: "/onboard", color: "bg-sky-500" },
   { icon: GraduationCap, title: "Student", desc: "View, share and QR-export your certificates", to: "/student", color: "bg-green-600" },
   { icon: Search, title: "Verifier", desc: "Verify any credential on-chain — no account needed", to: "/verify", color: "bg-slate-700" },
 ];

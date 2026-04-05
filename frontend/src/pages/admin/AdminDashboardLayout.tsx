@@ -1,11 +1,17 @@
 import { useAppKitAccount } from "@reown/appkit/react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, ShieldCheck, TableProperties, Wrench } from "lucide-react";
+import { FileClock, Loader2, ShieldCheck, TableProperties, Wrench } from "lucide-react";
 import { DashboardShell, type DashboardNavItem } from "@/components/dashboard/DashboardShell";
 import { Gate } from "@/components/ui/Gate";
 import { useIsOwner } from "@/hooks/useContract";
 
 const adminNavItems: DashboardNavItem[] = [
+  {
+    to: "/admin/applications",
+    label: "Applications",
+    description: "Review self-serve institution onboarding requests and activate approved wallets on-chain.",
+    icon: FileClock,
+  },
   {
     to: "/admin/institutions",
     label: "Institution Table",
@@ -46,10 +52,10 @@ export default function AdminDashboardLayout() {
   }
 
   return (
-    <DashboardShell
+      <DashboardShell
       badge="Owner Dashboard"
       title="Admin control center"
-      description="Manage institution access, respond to operational issues, and keep the credential network secure from one place."
+      description="Review institution applications, manage access, respond to operational issues, and keep the credential network secure from one place."
       navItems={adminNavItems}
       sidebarTone="bg-sky-100 text-sky-700"
       sidebarAccent="border-sky-100 bg-linear-to-br from-sky-50 via-white to-slate-100"

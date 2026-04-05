@@ -1,12 +1,13 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { GraduationCap, Menu, X, Award, Search, ShieldCheck,} from "lucide-react";
+import { GraduationCap, Menu, X, Award, Search, ShieldCheck, Building2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useIsInstitution, useIsOwner } from "@/hooks/useContract";
 import { useAppKitAccount } from "@reown/appkit/react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
+  { to: "/onboard", label: "Onboard", icon: Building2 },
   { to: "/issue", label: "Issue", icon: Award },
   { to: "/student", label: "My Certificates", icon: GraduationCap },
   { to: "/verify", label: "Verify", icon: Search },

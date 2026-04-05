@@ -41,6 +41,11 @@ function useSigner(provider: BrowserProvider | null) {
   }, [provider]);
 }
 
+export function useWalletSigner() {
+  const provider = useProvider();
+  return useSigner(provider);
+}
+
 function formatCertDisplayId(abbrev: string, tokenId: bigint): string {
   return `${abbrev}-${tokenId.toString().padStart(4, "0")}`;
 }

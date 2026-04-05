@@ -53,7 +53,7 @@ export function DashboardShell({
               <NavLink
                 key={to}
                 to={to}
-                end={to.endsWith("/forms") || to.endsWith("/institutions")}
+                end={to.endsWith("/forms") || to.endsWith("/institutions") || to.endsWith("/applications")}
                 className={({ isActive }) => cn(
                   "block rounded-2xl border px-4 py-3 transition-all",
                   isActive
