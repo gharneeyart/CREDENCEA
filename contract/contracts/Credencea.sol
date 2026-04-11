@@ -103,8 +103,6 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
     event ContractPaused(address indexed by);
     event ContractUnpaused(address indexed by);
 
-    // ─── Errors ───────────────────────────────────────────────────────────────
-
     error NotAnInstitution();
     error AlreadyInstitution();
     error SoulboundCannotTransfer();
@@ -126,8 +124,6 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
     error NotTokenRecipient();
     error SameAddress();
 
-    // ─── Modifiers ────────────────────────────────────────────────────────────
-
     modifier onlyInstitution() {
         if (!institutions[msg.sender].active) revert NotAnInstitution();
         _;
@@ -138,14 +134,12 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         _;
     }
 
-    // ─── Constructor ──────────────────────────────────────────────────────────
 
     constructor()
         ERC721("Credencea Credential", "CRED")
         Ownable(msg.sender)
     {}
 
-    // ─── Two-step Ownership ───────────────────────────────────────────────────
 
     function transferOwnership(address newOwner) public override onlyOwner {
         if (newOwner == address(0)) revert ZeroAddress();
@@ -159,7 +153,6 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         _transferOwnership(msg.sender);
     }
 
-    // ─── Emergency Pause ──────────────────────────────────────────────────────
 
     function pause() external onlyOwner {
         _pause();
@@ -171,18 +164,6 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         emit ContractUnpaused(msg.sender);
     }
 
-    // ─── Institution Management ───────────────────────────────────────────────
-
-    /**
-     * @notice Whitelist an institution with branding and abbreviation.
-     * @param institution  Wallet address of the institution.
-     * @param name         Full name e.g. "Massachusetts Institute of Technology".
-     * @param abbrev       Short prefix e.g. "MIT" — used in certificate ID display.
-     *                     Must be unique, uppercase recommended, max 8 chars.
-     * @param themeColor   Primary hex color for certificate card e.g. "#7c3aed".
-     * @param accentColor  Accent hex color e.g. "#a78bfa".
-     * @param dailyCap     Daily issuance cap (0 = DEFAULT_DAILY_CAP).
-     */
     function addInstitution(
         address institution,
         string calldata name,
@@ -231,10 +212,7 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         emit InstitutionCapUpdated(institution, institutions[institution].dailyCap);
     }
 
-    /**
-     * @notice Update an institution's branding colors.
-     * @dev Only the institution itself may update its own theme.
-     */
+ 
     function updateTheme(string calldata themeColor, string calldata accentColor)
         external onlyInstitution
     {
@@ -243,11 +221,7 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         emit InstitutionThemeUpdated(msg.sender, themeColor, accentColor);
     }
 
-    /**
-     * @notice Replace a compromised institution wallet with a new one.
-     * @dev Owner-only. Transfers the institution record to the new address.
-     *      Does NOT automatically re-mint historical tokens — use requestRecovery for students.
-     */
+
     function replaceInstitutionWallet(address oldWallet, address newWallet)
         external onlyOwner
     {
@@ -262,15 +236,7 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         emit InstitutionWalletReplaced(oldWallet, newWallet);
     }
 
-    // ─── Wallet Recovery (Student) ────────────────────────────────────────────
 
-    /**
-     * @notice Institution requests a wallet recovery for a student.
-     * @dev Step 1 of 2. Institution must verify student identity off-chain first.
-     *      A 48-hour delay before execution prevents rushed/coerced migrations.
-     * @param oldWallet  The student's lost/compromised wallet address.
-     * @param newWallet  The student's new wallet address.
-     */
     function requestRecovery(address oldWallet, address newWallet)
         external nonReentrant whenNotPaused onlyInstitution
     {
@@ -286,14 +252,6 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         emit RecoveryRequested(oldWallet, newWallet, msg.sender);
     }
 
-    /**
-     * @notice Execute a pending wallet recovery after the cooldown period.
-     * @dev Step 2 of 2. Burns all tokens from oldWallet and re-mints to newWallet.
-     *      Only the institution that originally issued the tokens may execute.
-     *      After the 48-hour delay to prevent abuse.
-     * @param oldWallet   The student's old wallet.
-     * @param tokenIds    Specific token IDs to migrate (must all be issued by caller).
-     */
     function executeRecovery(address oldWallet, uint256[] calldata tokenIds)
         external nonReentrant whenNotPaused onlyInstitution
     {
@@ -345,8 +303,6 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         emit RecoveryExecuted(oldWallet, newWallet, tokenIds, newTokenIds);
     }
 
-    // ─── Rate Limiting ────────────────────────────────────────────────────────
-
     function _checkAndIncrementRateLimit(uint256 count) internal {
         Institution storage inst = institutions[msg.sender];
         uint256 cap = inst.dailyCap == 0 ? DEFAULT_DAILY_CAP : inst.dailyCap;
@@ -359,7 +315,6 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         inst.dailyIssuedCount = newTotal;
     }
 
-    // ─── Certificate Issuance ─────────────────────────────────────────────────
 
     function issueCertificate(
         address recipient,
@@ -408,20 +363,12 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         emit CertificateIssued(tokenId, msg.sender, recipient, metadataURI, block.timestamp);
     }
 
-    // ─── Revocation — INSTITUTION AND OWNER ONLY, NEVER STUDENT ─────────────
-
-    /**
-     * @notice Revoke a certificate.
-     * @dev SECURITY: Only the issuing institution may call this.
-     *      Students have NO revocation access — this is by design.
-     *      Enforced by checking msg.sender == cert.issuer (not == cert.recipient).
-     */
     function revokeCertificate(uint256 tokenId)
         external nonReentrant whenNotPaused tokenExists(tokenId)
     {
         CertRecord storage cert = _certs[tokenId];
         if (cert.revoked) revert TokenAlreadyRevoked();
-        // CRITICAL: issuer check — not recipient. Students cannot revoke.
+    
         if (cert.issuer != msg.sender) revert NotTokenIssuer();
 
         bool withinWindow = block.timestamp <= cert.issuedAt + REVOCATION_WINDOW;
@@ -439,7 +386,6 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         emit RevocationOverrideGranted(tokenId);
     }
 
-    /// @notice Owner force-revoke (court order, identity theft, etc.)
     function forceRevoke(uint256 tokenId)
         external onlyOwner nonReentrant tokenExists(tokenId)
     {
@@ -449,7 +395,6 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         emit CertificateRevoked(tokenId, msg.sender);
     }
 
-    // ─── Views ────────────────────────────────────────────────────────────────
 
     function getCertificate(uint256 tokenId) external view returns (
         address issuer,
@@ -478,9 +423,7 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         issuedAt = cert.issuedAt;
     }
 
-    /**
-     * @notice Returns the display ID string for a token: e.g. "MIT-0042"
-     */
+  
     function getCertDisplayId(uint256 tokenId) external view tokenExists(tokenId) returns (string memory) {
         string memory abbrev = institutions[_certs[tokenId].issuer].abbrev;
         return string(abi.encodePacked(abbrev, "-", _uint256ToString(tokenId, 4)));
@@ -512,7 +455,6 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         dailyIssuedCount = inst.dailyIssuedCount;
     }
 
-    // ─── ERC-5192 ─────────────────────────────────────────────────────────────
 
     function locked(uint256 tokenId) external view override tokenExists(tokenId) returns (bool) {
         return true;
@@ -524,7 +466,6 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         return interfaceId == type(IERC5192).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    // ─── Soulbound ────────────────────────────────────────────────────────────
 
     function _update(address to, uint256 tokenId, address auth)
         internal override returns (address)
@@ -534,13 +475,11 @@ contract Credencea is ERC721URIStorage, Ownable, ReentrancyGuard, Pausable, IERC
         return super._update(to, tokenId, auth);
     }
 
-    // ─── Internal helpers ─────────────────────────────────────────────────────
 
     function _exists(uint256 tokenId) internal view returns (bool) {
         return _ownerOf(tokenId) != address(0);
     }
 
-    /// @dev Zero-pads a uint256 to minDigits length, e.g. 42 → "0042" with minDigits=4
     function _uint256ToString(uint256 value, uint8 minDigits) internal pure returns (string memory) {
         bytes memory digits = new bytes(20);
         uint8 len = 0;

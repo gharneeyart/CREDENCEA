@@ -9,10 +9,10 @@ export default function HomePage() {
     <div className="bg-white">
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-24 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-sm font-medium mb-8">
+        {/* <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-sm font-medium mb-8">
           <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
           Live on Sepolia · ERC-5192 Soulbound Tokens
-        </div>
+        </div> */}
         <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight text-slate-900 leading-tight mb-6">
           Academic credentials<br />
           <span className="text-sky-500">you can trust.</span>
